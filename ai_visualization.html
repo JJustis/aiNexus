@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Thought Process Visualization</title>
+    <style>
+        .canvas-container {
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        #aiCanvas {
+            border: 1px solid #2d3748;
+            background: #0f0f1a;
+        }
+        
+        .thought-stream {
+            color: #e2e8f0;
+            font-family: monospace;
+            margin-top: 10px;
+            height: 100px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #2d3748;
+            border-radius: 5px;
+        }
+        
+        .control-panel {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .control-button {
+            background: #4a5568;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .control-button:hover {
+            background: #2d3748;
+        }
+    </style>
+</head>
+<body>
+    <div class="canvas-container">
+        <canvas id="aiCanvas" width="800" height="400"></canvas>
+        <div class="thought-stream" id="thoughtStream"></div>
+        <div class="control-panel">
+            <button class="control-button" onclick="toggleVisualization()">Toggle Visualization</button>
+            <button class="control-button" onclick="clearCanvas()">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('aiCanvas');
+        const ctx = canvas.getContext('2d');
+        const thoughtStream = document.getElementById('thoughtStream');
+        let isRunning = true;
+        
+        // Neural network visualization parameters
+        const nodes = [];
+        const connections = [];
+        let frame = 0;
+        
+        class Node {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 5;
+                this.activity = Math.random();
+                this.connections = [];
+            }
+            
+            update() {
+                this.activity *= 0.95;
+                if (Math.random() < 0.05) {
+                    this.activity = 1;
+                }
+            }
+            
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(64, 224, 208, ${this.activity})`;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+        
+        class Connection {
+            constructor(startNode, endNode) {
+                this.startNode = startNode;
+                this.endNode = endNode;
+                this.strength = Math.random();
+            }
+            
+            draw() {
+                const activity = (this.startNode.activity + this.endNode.activity) / 2;
+                ctx.beginPath();
+                ctx.moveTo(this.startNode.x, this.startNode.y);
+                ctx.lineTo(this.endNode.x, this.endNode.y);
+                ctx.strokeStyle = `rgba(64, 224, 208, ${activity * this.strength})`;
+                ctx.lineWidth = this.strength * 2;
+                ctx.stroke();
+                ctx.closePath();
+            }
+        }
+        
+        // Initialize nodes and connections
+        function initializeNetwork() {
+            // Create nodes in a grid pattern
+            for (let i = 0; i < 10; i++) {
+                for (let j = 0; j < 5; j++) {
+                    const x = 100 + i * 70;
+                    const y = 100 + j * 70;
+                    nodes.push(new Node(x, y));
+                }
+            }
+            
+            // Create random connections
+            nodes.forEach(node => {
+                const numConnections = Math.floor(Math.random() * 3) + 1;
+                for (let i = 0; i < numConnections; i++) {
+                    const targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+                    if (targetNode !== node) {
+                        const connection = new Connection(node, targetNode);
+                        connections.push(connection);
+                        node.connections.push(connection);
+                    }
+                }
+            });
+        }
+        
+        function addThought(thought) {
+            const thoughtElement = document.createElement('div');
+            thoughtElement.textContent = `[${new Date().toLocaleTimeString()}] ${thought}`;
+            thoughtStream.prepend(thoughtElement);
+        }
+        
+        function update() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw connections
+            connections.forEach(connection => {
+                connection.draw();
+            });
+            
+            // Update and draw nodes
+            nodes.forEach(node => {
+                node.update();
+                node.draw();
+            });
+            
+            // Simulate AI thoughts
+            if (frame % 60 === 0) { // Every 60 frames
+                const thoughts = [
+                    "Analyzing sentence patterns...",
+                    "Detecting word relationships...",
+                    "Processing user feedback...",
+                    "Updating neural weights...",
+                    "Evaluating context vectors...",
+                    "Adjusting language model..."
+                ];
+                
+                addThought(thoughts[Math.floor(Math.random() * thoughts.length)]);
+            }
+            
+            frame++;
+            if (isRunning) {
+                requestAnimationFrame(update);
+            }
+        }
+        
+        function toggleVisualization() {
+            isRunning = !isRunning;
+            if (isRunning) {
+                update();
+            }
+        }
+        
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            thoughtStream.innerHTML = '';
+        }
+        
+        // Initialize and start the visualization
+        initializeNetwork();
+        update();
+    </script>
+</body>
+</html>

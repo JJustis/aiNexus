@@ -1,0 +1,154 @@
+<!-- Training Feedback Interface -->
+<div class="training-feedback">
+    <!-- Main Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">AI Training Interface</h5>
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-stars me-2"></i>
+                    <span id="userXP" class="badge bg-white text-primary">0 XP</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <!-- AI Response Display -->
+            <div class="ai-response mb-4">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-robot me-2"></i>
+                    <h6 class="mb-0">AI Response:</h6>
+                </div>
+                <div class="border rounded p-3 bg-light" id="aiResponse"></div>
+            </div>
+
+            <!-- Quick Feedback Buttons -->
+            <div class="quick-feedback mb-4">
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-success btn-sm" onclick="provideFeedback('accurate')">
+                        <i class="bi bi-check-circle"></i> Accurate
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="provideFeedback('inaccurate')">
+                        <i class="bi bi-x-circle"></i> Inaccurate
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="provideFeedback('helpful')">
+                        <i class="bi bi-heart"></i> Helpful
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="provideFeedback('needsWork')">
+                        <i class="bi bi-tools"></i> Needs Work
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detailed Feedback Form -->
+            <div class="correction-form" id="correctionForm" style="display: none;">
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Detailed Feedback
+                    </label>
+                    <textarea 
+                        class="form-control"
+                        id="correctionText"
+                        rows="4"
+                        placeholder="Please explain how this response could be improved..."
+                    ></textarea>
+                </div>
+                
+                <!-- Specific Feedback Categories -->
+                <div class="mb-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="grammarCheck">
+                        <label class="form-check-label" for="grammarCheck">
+                            Grammar/Spelling Issues
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="factCheck">
+                        <label class="form-check-label" for="factCheck">
+                            Factual Errors
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="clarityCheck">
+                        <label class="form-check-label" for="clarityCheck">
+                            Needs Better Clarity
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="submitDetailedFeedback()">
+                    <i class="bi bi-send"></i> Submit Feedback
+                </button>
+            </div>
+
+            <!-- Training Progress Section -->
+            <div class="training-progress mt-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up"></i>
+                        Training Progress
+                    </h6>
+                    <span id="progressPercentage" class="badge bg-primary">0%</span>
+                </div>
+                <div class="progress">
+                    <div 
+                        class="progress-bar bg-primary" 
+                        role="progressbar" 
+                        style="width: 0%" 
+                        id="trainingProgressBar"
+                        aria-valuenow="0" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Stats -->
+            <div class="learning-stats mt-4">
+                <h6 class="mb-3">
+                    <i class="bi bi-lightning"></i>
+                    Learning Activity
+                </h6>
+                <div class="row g-2">
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Responses</small>
+                            <div id="responseCount" class="fw-bold">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Corrections</small>
+                            <div id="correctionCount" class="fw-bold">0</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">Accuracy</small>
+                            <div id="accuracyRate" class="fw-bold">0%</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="border rounded p-2 text-center">
+                            <small class="text-muted">XP Rate</small>
+                            <div id="xpRate" class="fw-bold">0/hr</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notifications -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+    <div id="feedbackToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong class="me-auto">AI Training</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
