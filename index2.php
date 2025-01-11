@@ -240,7 +240,13 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                                     <div class="progress mb-2" style="height: 5px;">
                                         <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                                     </div>
-                                    <div class="audio-levels"></div>
+                                    <div class="audio-levels">
+                                        <!-- Audio bars will be inserted here by JavaScript -->
+                                    </div>
+                                    <div class="mt-2 text-light">
+                                        <small>Direction: <span id="audioDirection">0°</span></small><br>
+                                        <small>Intensity: <span id="audioIntensity">0%</span></small>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -249,7 +255,10 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                                     <div class="progress mb-2" style="height: 5px;">
                                         <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                                     </div>
-                                    <canvas id="videoFeedback" width="320" height="240"></canvas>
+                                    <div class="video-container position-relative">
+                                        <video id="videoFeedback" autoplay playsinline muted></video>
+                                        <canvas id="motionCanvas" class="position-absolute top-0 start-0 w-100 h-100"></canvas>
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -258,7 +267,11 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                                     <div class="progress mb-2" style="height: 5px;">
                                         <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                                     </div>
-                                    <div class="motion-data"></div>
+                                    <div class="motion-data">
+                                        Movement detected: <span id="motionCoords">0, 0</span><br>
+                                        Intensity: <span id="motionIntensity">0%</span><br>
+                                        Sound Source: <span id="soundLocation">No sound detected</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -272,9 +285,12 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
 					<div class="ai-analysis-section" style="display:none;">
     <div class="card mt-3">
         <div class="card-header">
+		
             <h5 class="mb-0">Sentence Analysis</h5>
         </div>
         <div class="card-body">
+		
+		
             <div id="analysisResults"></div>
         </div>
     </div>
@@ -294,20 +310,9 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                         </div>
                     </div>
                     
-                    <p class="text-muted">
-    <?php 
-    echo htmlspecialchars($article['summary']); 
-    
-    // Generate URL-friendly title
-    $urlTitle = strtolower(preg_replace(['/[^a-zA-Z0-9\s]/', '/\s+/'], ['', '-'], $article['title']));
-    
-    // Create similarity score (you might want to calculate this dynamically)
-    $similarityScore = isset($article['similarity_score']) ? $article['similarity_score'] : 50;
-    
-    // Generate article link
-    $articleLink = sprintf('article.php?artid=%d-%s', $similarityScore, $urlTitle);
-    ?>
-    <a href="<?php echo $articleLink; ?>" class="text-primary ms-2">
+<p class="text-muted">
+    <?php echo htmlspecialchars($article['summary']); ?>
+    <a href="article.php?artid=<?php echo $article['article_id']; ?>" class="text-primary ms-2">
         Read Full Article
     </a>
 </p>
@@ -463,7 +468,7 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tensorflow/4.7.0/tf.min.js"></script>
     <script src="brain.js"></script>
-    
+
     <script>
     function changeTopic(topic) {
         window.location.href = `?topic=${topic}`;

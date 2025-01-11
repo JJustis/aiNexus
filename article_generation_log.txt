@@ -1,0 +1,36 @@
+[2025-01-11 08:50:10] [ERROR] Unexpected system error
+Context: {
+    "error_message": "Call to undefined method AdvancedArticleGenerator::extractTextFromRSS()",
+    "error_trace": "#0 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(101): AdvancedArticleGenerator->fetchRSSContent(Array)\n#1 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(43): AdvancedArticleGenerator->generateRSSSynthesizedArticle(Array)\n#2 C:\\portablexampp\\htdocs\\aimod\\generate_advanced_article.php(217): AdvancedArticleGenerator->generateArticle('rss_synthesized...', Array)\n#3 {main}"
+}
+[2025-01-11 08:51:25] [ERROR] Unexpected system error
+Context: {
+    "error_message": "Call to undefined method AdvancedArticleGenerator::extractTextFromRSS()",
+    "error_trace": "#0 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(100): AdvancedArticleGenerator->fetchRSSContent(Array)\n#1 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(42): AdvancedArticleGenerator->generateRSSSynthesizedArticle(Array)\n#2 C:\\portablexampp\\htdocs\\aimod\\generate_advanced_article.php(217): AdvancedArticleGenerator->generateArticle('rss_synthesized...', Array)\n#3 {main}"
+}
+[2025-01-11 08:51:34] [ERROR] Unexpected system error
+Context: {
+    "error_message": "Call to undefined method AdvancedArticleGenerator::extractTextFromRSS()",
+    "error_trace": "#0 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(100): AdvancedArticleGenerator->fetchRSSContent(Array)\n#1 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(42): AdvancedArticleGenerator->generateRSSSynthesizedArticle(Array)\n#2 C:\\portablexampp\\htdocs\\aimod\\generate_advanced_article.php(217): AdvancedArticleGenerator->generateArticle('rss_synthesized...', Array)\n#3 {main}"
+}
+[2025-01-11 08:52:32] [ERROR] Unexpected system error
+Context: {
+    "error_message": "Call to undefined method AdvancedArticleGenerator::fetchUrlContent()",
+    "error_trace": "#0 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(100): AdvancedArticleGenerator->fetchRSSContent(Array)\n#1 C:\\portablexampp\\htdocs\\aimod\\advanced_article_generator.php(42): AdvancedArticleGenerator->generateRSSSynthesizedArticle(Array)\n#2 C:\\portablexampp\\htdocs\\aimod\\generate_advanced_article.php(217): AdvancedArticleGenerator->generateArticle('rss_synthesized...', Array)\n#3 {main}"
+}
+[2025-01-11 08:52:46] [ERROR] Only POST requests are allowed
+Context: {
+    "method": "GET"
+}
+[2025-01-11 08:55:39] [ERROR] Invalid word format
+Context: {
+    "word": ""
+}
+[2025-01-11 10:30:07] [ERROR] Invalid word format
+Context: {
+    "word": ""
+}
+[2025-01-11 10:30:31] [ERROR] Invalid word format
+Context: {
+    "word": ""
+}

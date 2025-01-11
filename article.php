@@ -2,6 +2,7 @@
 session_start();
 require_once 'database_connection.php';
 header('Content-Type: text/html; charset=UTF-8');
+
 class ArticleDisplay {
     private $db;
 
@@ -10,102 +11,113 @@ class ArticleDisplay {
     }
 
     public function getArticleDetails($articleId) {
-    try {
-        // Log the full input
-        error_log("Full Article ID Input: " . $articleId);
+        try {
+            // Log the full input
+            error_log("Full Article ID Input: " . $articleId);
 
-        // Split the input by the last hyphen to separate the ID
-        $lastHyphenPos = strrpos($articleId, '-');
-        
-        if ($lastHyphenPos === false) {
-            throw new Exception("Invalid article ID format: " . $articleId);
-        }
+            // Handle both numeric and URL-friendly formats
+            if (is_numeric($articleId)) {
+                // If it's just a number, use it directly
+                $numericId = intval($articleId);
+                $similarityScore = 50; // Default similarity score
+            } else {
+                // Split the input by the last hyphen to separate the ID
+                $lastHyphenPos = strrpos($articleId, '-');
+                
+                if ($lastHyphenPos === false) {
+                    // Try to use the whole string as a numeric ID
+                    if (!is_numeric($articleId)) {
+                        throw new Exception("Invalid article ID format");
+                    }
+                    $numericId = intval($articleId);
+                    $similarityScore = 50; // Default similarity score
+                } else {
+                    // Extract similarity score and URL-friendly title
+                    $similarityScore = intval(substr($articleId, 0, $lastHyphenPos));
+                    $urlTitle = substr($articleId, $lastHyphenPos + 1);
+                }
+            }
 
-        // Extract similarity score (everything before the last hyphen)
-        $similarityScore = intval(substr($articleId, 0, $lastHyphenPos));
-        
-        // Extract URL-friendly title (everything after the last hyphen)
-        $urlTitle = substr($articleId, $lastHyphenPos + 1);
-        
-        error_log("Parsed Details - Similarity Score: {$similarityScore}, URL Title: {$urlTitle}");
+            // Build the query based on what we have
+            if (isset($urlTitle)) {
+                // Try to find by URL-friendly title first
+                $stmt = $this->db->prepare("
+                    SELECT a.*, 
+                           u.username AS author_name, 
+                           COALESCE((
+                               SELECT COUNT(*) 
+                               FROM comments c 
+                               WHERE c.article_id = a.article_id
+                           ), 0) AS comment_count
+                    FROM articles a
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    WHERE LOWER(REPLACE(REPLACE(a.title, ' ', '-'), '[^a-zA-Z0-9-]', '')) = :url_title
+                    OR a.article_id = :article_id
+                ");
+                $stmt->execute([
+                    'url_title' => strtolower($urlTitle),
+                    'article_id' => $numericId ?? 0
+                ]);
+            } else {
+                // Find by numeric ID
+                $stmt = $this->db->prepare("
+                    SELECT a.*, 
+                           u.username AS author_name, 
+                           COALESCE((
+                               SELECT COUNT(*) 
+                               FROM comments c 
+                               WHERE c.article_id = a.article_id
+                           ), 0) AS comment_count
+                    FROM articles a
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    WHERE a.article_id = :article_id
+                ");
+                $stmt->execute(['article_id' => $numericId]);
+            }
 
-        // Find article by URL-friendly title
-        $stmt = $this->db->prepare("
-            SELECT a.*, 
-                   u.username AS author_name, 
-                   COALESCE((
-                       SELECT COUNT(*) 
-                       FROM comments c 
-                       WHERE c.article_id = a.article_id
-                   ), 0) AS comment_count
-            FROM articles a
-            LEFT JOIN users u ON a.user_id = u.user_id
-            WHERE LOWER(REPLACE(REPLACE(a.title, ' ', '-'), '[^a-zA-Z0-9-]', '')) = :url_title
-        ");
-        
-        $stmt->execute(['url_title' => strtolower($urlTitle)]);
-        $article = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$article) {
-            // Fallback: try partial match
-            $stmt = $this->db->prepare("
-                SELECT a.*, 
-                       u.username AS author_name, 
-                       COALESCE((
-                           SELECT COUNT(*) 
-                           FROM comments c 
-                           WHERE c.article_id = a.article_id
-                       ), 0) AS comment_count
-                FROM articles a
-                LEFT JOIN users u ON a.user_id = u.user_id
-                WHERE a.title LIKE :title_like
-            ");
-            
-            $stmt->execute(['title_like' => '%' . str_replace('-', ' ', $urlTitle) . '%']);
             $article = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$article) {
+                throw new Exception("Article not found");
+            }
+
+            // Fetch related articles
+            $relatedArticles = $this->fetchRelatedArticles($article['article_id'], $article['topic'] ?? 'general');
+
+            // Safely decode AI thoughts
+            $thoughts = json_decode($article['ai_thoughts'] ?? '[]', true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log("JSON decoding error for AI thoughts: " . json_last_error_msg());
+                $thoughts = [];
+            }
+
+            // Fetch comments
+            $commentStmt = $this->db->prepare("
+                SELECT c.*, u.username
+                FROM comments c
+                LEFT JOIN users u ON c.user_id = u.user_id
+                WHERE c.article_id = :article_id
+                ORDER BY c.created_at DESC
+            ");
+            $commentStmt->execute(['article_id' => $article['article_id']]);
+            $comments = $commentStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            return [
+                'article' => $article,
+                'related_articles' => $relatedArticles,
+                'ai_thoughts' => $thoughts,
+                'similarity_score' => $similarityScore,
+                'comments' => $comments
+            ];
+        } catch (Exception $e) {
+            // Log the full error details
+            error_log('Article Retrieval Error: ' . $e->getMessage());
+            error_log('Full Error Trace: ' . $e->getTraceAsString());
+            
+            // Rethrow to be caught in the main script
+            throw $e;
         }
-
-        if (!$article) {
-            error_log("No article found for URL title: " . $urlTitle);
-            throw new Exception("Article not found. URL Title: " . $urlTitle);
-        }
-
-        // Fetch related articles
-        $relatedArticles = $this->fetchRelatedArticles($article['article_id'], $article['topic'] ?? 'general');
-
-        // Safely decode AI thoughts
-        $thoughts = json_decode($article['ai_thoughts'] ?? '[]', true);
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            error_log("JSON decoding error for AI thoughts: " . json_last_error_msg());
-            $thoughts = [];
-        }
-
-    $commentStmt = $this->db->prepare("
-        SELECT c.*, u.username
-        FROM comments c
-        LEFT JOIN users u ON c.user_id = u.user_id
-        WHERE c.article_id = :article_id
-        ORDER BY c.created_at DESC
-    ");
-    $commentStmt->execute(['article_id' => $article['article_id']]);
-    $comments = $commentStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return [
-        'article' => $article,
-        'related_articles' => $relatedArticles,
-        'ai_thoughts' => $thoughts,
-        'similarity_score' => $similarityScore,
-        'comments' => $comments // Add comments to the returned data
-    ];
-    } catch (Exception $e) {
-        // Log the full error details
-        error_log('Article Retrieval Error: ' . $e->getMessage());
-        error_log('Full Error Trace: ' . $e->getTraceAsString());
-        
-        // Rethrow to be caught in the main script
-        throw $e;
     }
-}
 
     private function fetchRelatedArticles($currentArticleId, $topic) {
         try {
@@ -139,7 +151,7 @@ try {
     // Get article ID from URL
     $articleId = isset($_GET['artid']) ? $_GET['artid'] : null;
 
-    // Extensive logging and validation
+    // Debug logging
     error_log("Received Article ID: " . print_r($articleId, true));
 
     if (!$articleId) {
@@ -155,10 +167,17 @@ try {
         }
     }
 
+    // Get the article details - THIS IS THE IMPORTANT PART WE'RE ADDING
     $articleData = $articleDisplay->getArticleDetails($articleId);
-    $comments = $articleData['comments']; // Add this line here
+    // Add this line right after getting article data
+$comments = $articleData['comments'] ?? [];
+    if (!$articleData || !isset($articleData['article'])) {
+        throw new Exception("Could not retrieve article details");
+    }
 
-    // If we reach here, article was successfully retrieved
+    // For debugging
+    error_log("Article data retrieved successfully for ID: " . $articleId);
+    
 } catch (Exception $e) {
     // Log the full error details
     error_log('Article Page Critical Error: ' . $e->getMessage());
@@ -224,7 +243,7 @@ try {
     <?php echo htmlspecialchars($articleData['article']['summary']); ?>
 </p>
 <div class="article-content mb-4">
-    <?php echo nl2br(htmlspecialchars($articleData['article']['content'])); ?>
+    <?php echo nl2br($articleData['article']['content']); ?>
 </div>
 
                     <div class="ai-thoughts">
@@ -251,43 +270,52 @@ try {
                                     Published: <?php echo date('F j, Y', strtotime($articleData['article']['created_at'])); ?>
                                 </p>
                             </div>
-							<div class="comments-section mt-5">
-    <h4 class="mb-4">Comments</h4>
-    <?php foreach ($comments as $comment): ?>
-        <div class="comment mb-4">
-            <div class="d-flex align-items-center mb-2">
-                <strong><?php echo htmlspecialchars($comment['username']); ?></strong>
-                <span class="text-muted ms-2"><?php echo date('F j, Y', strtotime($comment['created_at'])); ?></span>
+<div class="comments-section mt-5">
+    <h4 class="mb-4">Comments (<?php echo count($comments ?? []); ?>)</h4>
+    
+    <?php if (!empty($comments)): ?>
+        <?php foreach ($comments as $comment): ?>
+            <div class="comment mb-4 p-3 border rounded">
+                <div class="d-flex align-items-center mb-2">
+                    <strong><?php echo htmlspecialchars($comment['username'] ?? 'Anonymous'); ?></strong>
+                    <span class="text-muted ms-2">
+                        <?php echo date('F j, Y', strtotime($comment['created_at'])); ?>
+                    </span>
+                </div>
+                <p class="mb-2"><?php echo htmlspecialchars($comment['content']); ?></p>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="voteComment(<?php echo $comment['comment_id']; ?>, 'up')">
+                        <i class="bi bi-arrow-up"></i> Upvote
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="voteComment(<?php echo $comment['comment_id']; ?>, 'down')">
+                        <i class="bi bi-arrow-down"></i> Downvote
+                    </button>
+                    <span class="text-muted vote-count-<?php echo $comment['comment_id']; ?>">
+                        <?php echo ($comment['votes'] ?? 0); ?> votes
+                    </span>
+                </div>
             </div>
-            <p><?php echo htmlspecialchars($comment['content']); ?></p>
-            <div class="d-flex align-items-center">
-                <button class="btn btn-sm btn-outline-primary me-2" onclick="voteComment(<?php echo $comment['comment_id']; ?>, 'up')">
-                    <i class="bi bi-arrow-up"></i> Upvote
-                </button>
-                <button class="btn btn-sm btn-outline-secondary me-2" onclick="voteComment(<?php echo $comment['comment_id']; ?>, 'down')">
-                    <i class="bi bi-arrow-down"></i> Downvote
-                </button>
-                <span class="text-muted"><?php echo $comment['votes']; ?> votes</span>
-            </div>
-        </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
+    <?php else: ?>
+        <p class="text-muted">No comments yet. Be the first to comment!</p>
+    <?php endif; ?>
 
-    <h5 class="mt-5 mb-3">Leave a Comment</h5>
-    <form id="commentForm" onsubmit="submitComment(event)">
-        <div class="mb-3">
-            <label for="commentName" class="form-label">Name</label>
-            <input type="text" class="form-control" id="commentName" required>
-        </div>
-        <div class="mb-3">
-            <label for="commentEmail" class="form-label">Email</label>
-            <input type="email" class="form-control" id="commentEmail" required>
-        </div>
-        <div class="mb-3">
-            <label for="commentContent" class="form-label">Comment</label>
-            <textarea class="form-control" id="commentContent" rows="4" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Submit Comment</button>
-    </form>
+    <div id="comment-form-container">
+        <h5 class="mt-5 mb-3">Leave a Comment</h5>
+        <form id="comment-form" onsubmit="return handleCommentSubmit(event)">
+            <div class="mb-3">
+                <label for="comment-name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="comment-name" name="name" required>
+            </div>
+            <div class="mb-3">
+                <label for="comment-content" class="form-label">Comment</label>
+                <textarea class="form-control" id="comment-content" name="content" rows="4" required></textarea>
+            </div>
+            <input type="hidden" id="comment-article-id" name="article_id" 
+                   value="<?php echo htmlspecialchars($articleData['article']['article_id']); ?>">
+            <button type="submit" class="btn btn-primary">Submit Comment</button>
+        </form>
+    </div>
 </div>
                             <div class="col-md-6 text-md-end">
 							
@@ -322,27 +350,21 @@ try {
                     </div>
                 </div>
 
-                <?php if (!empty($articleData['related_articles'])): ?>
-                    <div class="related-articles mt-4">
-                        <h3 class="mb-3">Related Articles</h3>
-                        <div class="row">
-                            <?php foreach ($articleData['related_articles'] as $relatedArticle): ?>
-                                <div class="col-md-4">
-                                    <div class="card mb-3">
-                                        <div class="card-body">
-                                            <h5 class="card-title"><?php echo htmlspecialchars($relatedArticle['title']); ?></h5>
-                                            <p class="card-text"><?php echo htmlspecialchars($relatedArticle['summary']); ?></p>
-                                            <a href="article.php?artid=50-<?php echo strtolower(preg_replace(['/[^a-zA-Z0-9\s]/', '/\s+/'], ['', '-'], $relatedArticle['title'])); ?>" 
-                                               class="btn btn-sm btn-outline-primary">
-                                                Read More
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
+                <?php foreach ($articleData['related_articles'] as $relatedArticle): ?>
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title"><?php echo htmlspecialchars($relatedArticle['title']); ?></h5>
+                <p class="card-text"><?php echo htmlspecialchars($relatedArticle['summary']); ?></p>
+                <a href="article.php?artid=<?php echo $relatedArticle['article_id']; ?>" 
+                   class="btn btn-sm btn-outline-primary">
+                    Read More
+                </a>
+            </div>
+        </div>
+    </div>
+<?php endforeach; ?>
+               
             </div>
         </div>
     </main>
@@ -426,36 +448,280 @@ try {
         </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function provideFeedback(type, articleId) {
-            fetch('handle_feedback.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    articleId: articleId,
-                    feedbackType: type
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    document.querySelector('.exp-points').textContent = data.newExp + ' XP';
-                    alert(`Feedback submitted successfully! Earned ${data.expGained} XP`);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred while submitting feedback');
-            });
+    <!-- Place this at the bottom of your article.php, just before the closing </body> tag -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+async function handleCommentSubmit(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('comment-form');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+
+    try {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('comment-name').value);
+        formData.append('content', document.getElementById('comment-content').value);
+        formData.append('article_id', document.getElementById('comment-article-id').value);
+
+        const response = await fetch('submit_comment.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Error submitting comment');
         }
 
-        function showEditForm(articleId) {
-            // Implement edit form logic similar to index2.php
-            alert('Edit functionality to be implemented');
+        // Add new comment to the page
+        const commentsSection = document.querySelector('.comments-section');
+        const noCommentsMessage = commentsSection.querySelector('.text-muted');
+        if (noCommentsMessage) {
+            noCommentsMessage.remove();
         }
-    </script>
+
+        const newComment = document.createElement('div');
+        newComment.className = 'comment mb-4 p-3 border rounded';
+        newComment.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <strong>${document.getElementById('comment-name').value}</strong>
+                <span class="text-muted ms-2">${new Date().toLocaleDateString()}</span>
+            </div>
+            <p class="mb-2">${document.getElementById('comment-content').value}</p>
+            <div class="d-flex align-items-center">
+                <button class="btn btn-sm btn-outline-primary me-2" onclick="voteComment(${data.commentId}, 'up')">
+                    <i class="bi bi-arrow-up"></i> Upvote
+                </button>
+                <button class="btn btn-sm btn-outline-secondary me-2" onclick="voteComment(${data.commentId}, 'down')">
+                    <i class="bi bi-arrow-down"></i> Downvote
+                </button>
+                <span class="text-muted vote-count-${data.commentId}">0 votes</span>
+            </div>
+        `;
+
+        // Insert at the top of the comments
+        const firstComment = commentsSection.querySelector('.comment');
+        if (firstComment) {
+            firstComment.parentNode.insertBefore(newComment, firstComment);
+        } else {
+            commentsSection.insertBefore(newComment, document.getElementById('comment-form-container'));
+        }
+
+        // Update comment count
+        const commentHeader = commentsSection.querySelector('h4');
+        const currentCount = parseInt(commentHeader.textContent.match(/\d+/)[0]) || 0;
+        commentHeader.textContent = `Comments (${currentCount + 1})`;
+
+        // Show success message
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+        alert.innerHTML = `
+            Comment posted successfully!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        form.insertAdjacentElement('beforebegin', alert);
+
+        // Clear form
+        form.reset();
+
+    } catch (error) {
+        console.error('Error:', error);
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        alert.innerHTML = `
+            ${error.message || 'Error submitting comment. Please try again.'}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        form.insertAdjacentElement('beforebegin', alert);
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+
+    return false;
+}
+</script>
+<script>
+
+// Feedback functionality
+function provideFeedback(type, articleId) {
+    fetch('handle_feedback.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            articleId: articleId,
+            feedbackType: type
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.querySelector('.exp-points').textContent = data.newExp + ' XP';
+            alert(`Feedback submitted successfully! Earned ${data.expGained} XP`);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while submitting feedback');
+    });
+}
+
+// Comment voting functionality
+function voteComment(commentId, voteType) {
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.disabled = true;
+    
+    fetch('vote_comment.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            commentId: commentId,
+            voteType: voteType
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update vote count display
+            const voteCount = document.querySelector(`.vote-count-${commentId}`);
+            if (voteCount) {
+                voteCount.textContent = `${data.votes} votes`;
+            }
+            // Optional: Add visual feedback
+            button.classList.add(voteType === 'up' ? 'btn-success' : 'btn-danger');
+            setTimeout(() => {
+                button.classList.remove(voteType === 'up' ? 'btn-success' : 'btn-danger');
+            }, 1000);
+        } else {
+            throw new Error(data.message || 'Error voting on comment');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert(error.message || 'Error voting on comment');
+    })
+    .finally(() => {
+        button.disabled = false;
+        button.innerHTML = originalHTML;
+    });
+}
+
+// Comment submission functionality
+async function submitComment(event) {
+    event.preventDefault();
+    
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+
+    const formData = new FormData();
+    formData.append('name', document.getElementById('commentName').value);
+    formData.append('content', document.getElementById('commentContent').value);
+    formData.append('article_id', document.getElementById('articleId').value);
+
+    try {
+        const response = await fetch('submit_comment.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Add the new comment to the page
+            const commentsSection = document.querySelector('.comments-section');
+            const newComment = document.createElement('div');
+            newComment.className = 'comment mb-4 p-3 border rounded';
+            
+            newComment.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <strong>${document.getElementById('commentName').value}</strong>
+                    <span class="text-muted ms-2">${new Date().toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    })}</span>
+                </div>
+                <p class="mb-2">${document.getElementById('commentContent').value}</p>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-sm btn-outline-primary me-2" onclick="voteComment(${data.commentId}, 'up')">
+                        <i class="bi bi-arrow-up"></i> Upvote
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary me-2" onclick="voteComment(${data.commentId}, 'down')">
+                        <i class="bi bi-arrow-down"></i> Downvote
+                    </button>
+                    <span class="text-muted vote-count-${data.commentId}">0 votes</span>
+                </div>
+            `;
+
+            // Insert at the top of comments
+            const firstComment = commentsSection.querySelector('.comment');
+            if (firstComment) {
+                firstComment.parentNode.insertBefore(newComment, firstComment);
+            } else {
+                // If there were no comments before
+                const noComments = commentsSection.querySelector('.text-muted');
+                if (noComments) {
+                    noComments.replaceWith(newComment);
+                }
+            }
+
+            // Update comment count
+            const commentHeader = commentsSection.querySelector('h4');
+            const currentCount = parseInt(commentHeader.textContent.match(/\d+/)[0]) || 0;
+            commentHeader.textContent = `Comments (${currentCount + 1})`;
+
+            // Clear form
+            document.getElementById('commentForm').reset();
+            
+            // Show success message
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+            alert.innerHTML = `
+                Comment posted successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.getElementById('commentForm').insertAdjacentElement('beforebegin', alert);
+            
+        } else {
+            throw new Error(data.message || 'Error submitting comment');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        alert.innerHTML = `
+            ${error.message || 'Error submitting comment. Please try again.'}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.getElementById('commentForm').insertAdjacentElement('beforebegin', alert);
+    } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = originalText;
+    }
+}
+
+// Edit form functionality
+function showEditForm(articleId) {
+    alert('Edit functionality to be implemented');
+}
+
+// Initialize Bootstrap components
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    tooltips.forEach(tooltip => new bootstrap.Tooltip(tooltip));
+});
+</script>
 </body>
 </html>
