@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>AI News Nexus - Enhanced Training Interface</title>
-    <script src="https://unpkg.com/brain.js@2.0.0-beta.23/dist/brain-browser.min.js"></script>
+    <script src="brain.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -110,18 +110,26 @@
             this.isTrained = false;
         }
 
+     
         async fetchTrainingData() {
-            try {
-                const response = await fetch('enhanced_training_data.txt');
-                const text = await response.text();
-                return text.split('\n')
-                    .filter(line => line.trim() !== '' && !line.startsWith('---'))
-                    .map(line => line.toLowerCase());
-            } catch (error) {
-                console.error('Training data fetch error:', error);
-                return [];
-            }
-        }
+    try {
+        const response = await fetch('training_data.txt');
+        const text = await response.text();
+        const lines = text.split('\n')
+            .filter(line => line.trim() !== '' && !line.startsWith('---'))
+            .map(line => line.toLowerCase());
+        
+        const maxLines = 6000; // Limit to 20,000 lines
+        const sampledLines = lines.length > maxLines ? 
+            lines.sort(() => 0.5 - Math.random()).slice(0, maxLines) : lines;
+        
+        console.log(`Using ${sampledLines.length} lines out of ${lines.length} total`);
+        return sampledLines;
+    } catch (error) {
+        console.error('Training data fetch error:', error);
+        return [];
+    }
+}
 
         prepareTrainingData(lines) {
             const trainingData = [];
@@ -263,7 +271,7 @@
 
         // Add a manual timeout
         const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Training timeout')), 60000); // 60 second timeout
+            setTimeout(() => reject(new Error('Training timeout')), 11160000); // 60 second timeout
         });
 
         return Promise.race([trainingPromise, timeoutPromise]);
@@ -406,7 +414,7 @@
                     trainingProgressBar.style.width = `${progress}%`;
                 }),
                 new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Training timeout')), 60000) // Increased timeout
+                    setTimeout(() => reject(new Error('Training timeout')), 11160000) // Increased timeout
                 )
             ]);
 

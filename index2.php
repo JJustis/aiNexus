@@ -6,7 +6,30 @@
     <title>AI News Nexus</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
+	<style>
+
+
+    .xp-display {
+        transition: all 0.3s ease;
+    }
+
+    .xp-display:hover {
+        transform: scale(1.05);
+    }
+
+    .exp-points {
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
         .gradient-header {
             background: linear-gradient(to right, #0061ff, #6b3aff);
             color: white;
@@ -170,13 +193,47 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
     $articles = getArticles($selectedTopic);
     ?>
 
-    <header class="gradient-header">
-        <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="display-4 fw-bold">AI News Nexus</h1>
-                    <p class="text-blue-100">News generated and curated by artificial intelligence</p>
-                </div>
+<?php
+$is_logged_in = isset($_SESSION['user_id']);
+$username = $is_logged_in && isset($_SESSION['username']) ? $_SESSION['username'] : '';
+?>
+<header class="gradient-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="display-4 fw-bold">AI News Nexus</h1>
+                <p class="text-blue-100">News generated and curated by artificial intelligence</p>
+            </div>
+            <div class="d-flex align-items-center">
+                <?php if (!$is_logged_in): ?>
+                    <div class="bg-white bg-opacity-25 rounded p-3 me-3">
+                        <a href="login.php" class="btn btn-light btn-sm mb-2 w-100">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                        </a>
+                        <a href="register.php" class="btn btn-light btn-sm w-100">
+                            <i class="bi bi-person-plus me-2"></i>Register
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="dropdown me-3">
+                        <button class="btn btn-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-2"></i><?php echo htmlspecialchars($username); ?>
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="profile.php">
+                                <i class="bi bi-person me-2"></i>Profile
+                            </a></li>
+                            <li><a class="dropdown-item" href="dashboard.php">
+                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="logout.php">
+                                <i class="bi bi-box-arrow-right me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="bg-white bg-opacity-25 rounded p-3">
                     <span class="d-block">Experience Points</span>
                     <div class="fs-4 fw-bold exp-points">
@@ -185,7 +242,8 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                 </div>
             </div>
         </div>
-    </header>
+    </div>
+</header>
 
     <div class="ai-status-banner">
         <div class="container">
@@ -311,7 +369,7 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                     </div>
                     
 <p class="text-muted">
-    <?php echo htmlspecialchars($article['summary']); ?>
+    <?php echo nl2br($article['summary']); ?>
     <a href="article.php?artid=<?php echo $article['article_id']; ?>" class="text-primary ms-2">
         Read Full Article
     </a>
@@ -357,7 +415,7 @@ $sentenceAnalyzer = new SentenceAnalyzer($db);
                             <div class="mb-3">
                                 <label class="form-label">Summary</label>
                                 <textarea class="form-control" rows="3" 
-                                         id="editSummary_<?php echo $article['article_id']; ?>"><?php echo htmlspecialchars($article['summary']); ?></textarea>
+                                         id="editSummary_<?php echo $article['article_id']; ?>"><?php echo nl2br($article['summary']); ?></textarea>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Additional Notes</label>

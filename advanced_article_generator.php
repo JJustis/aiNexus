@@ -16,22 +16,73 @@ class AdvancedArticleGenerator {
         $this->rssFeeds = $this->loadRSSFeeds();
     }
 
-    private function loadRSSFeeds() {
-        return [
-            'technology' => [
-                'https://techcrunch.com/feed/',
-                'https://www.wired.com/feed/',
-                'https://www.theverge.com/rss/index.xml'
-            ],
-            'science' => [
-                'https://www.scientificamerican.com/article/feed/',
-                'https://www.nasa.gov/rss/dyn/breaking_news.rss'
-            ],
-            'business' => [
-                'https://www.forbes.com/feeds/forbesfeeds.rss'
-            ]
-        ];
-    }
+private function loadRSSFeeds() {
+    return [
+        'technology' => [
+            'https://techcrunch.com/feed/',
+            'https://www.wired.com/feed/',
+            'https://www.theverge.com/rss/index.xml',
+            'https://arstechnica.com/feed/',
+            'https://www.cnet.com/rss/news/',
+            'https://venturebeat.com/feed/',
+            'https://techraptor.net/rss/articles'
+        ],
+        'science' => [
+            'https://www.scientificamerican.com/article/feed/',
+            'https://www.nasa.gov/rss/dyn/breaking_news.rss',
+            'https://phys.org/rss-feed/',
+            'https://www.newscientist.com/feed/home/',
+            'https://www.nationalgeographic.com/science/article/rss',
+            'https://www.sciencenews.org/feed'
+        ],
+        'business' => [
+            'https://www.forbes.com/feeds/forbesfeeds.rss',
+            'https://www.bloomberg.com/feeds/bbiz.rss',
+            'https://www.wsj.com/news/business?mod=rsswn',
+            'https://www.reuters.com/business/feed/',
+            'https://www.entrepreneur.com/feed/'
+        ],
+        'world_news' => [
+            'https://www.bbc.com/news/world/rss.xml',
+            'https://www.aljazeera.com/xml/rss/all.xml',
+            'https://www.npr.org/rss/rss.php?id=1004',
+            'https://www.reuters.com/world/feed/'
+        ],
+        'entertainment' => [
+            'https://www.hollywoodreporter.com/feed/',
+            'https://variety.com/feed/',
+            'https://ew.com/feed/',
+            'https://www.billboard.com/feed/'
+        ],
+        'sports' => [
+            'https://www.espn.com/espn/rss/news',
+            'https://www.si.com/rss/si_topstories.rss',
+            'https://bleacherreport.com/rss/index.html'
+        ],
+        'health' => [
+            'https://www.health.com/feed',
+            'https://www.medicalnewstoday.com/rss/main',
+            'https://www.webmd.com/rss/featured_item.xml',
+            'https://www.healthline.com/health/rss'
+        ],
+        'technology_reviews' => [
+            'https://www.pcmag.com/rss/all',
+            'https://www.gizmodo.com/rss',
+            'https://www.engadget.com/rss.xml',
+            'https://www.digitaltrends.com/rss.xml'
+        ],
+        'environment' => [
+            'https://www.nationalgeographic.com/environment/article/rss',
+            'https://www.eenews.net/rss/feed',
+            'https://www.climatechangenews.com/feed/'
+        ],
+        'finance' => [
+            'https://www.cnbc.com/id/100727362/device/rss/rss.html',
+            'https://www.investors.com/feed/',
+            'https://seekingalpha.com/feed.xml'
+        ]
+    ];
+}
 
     public function generateArticle($type, $options = []) {
         switch ($type) {

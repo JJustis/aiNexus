@@ -152,10 +152,17 @@ class RequestValidator {
     ];
 
     private static $validRSSCategories = [
-        'technology', 
-        'science', 
-        'business'
-    ];
+    'technology', 
+    'science', 
+    'business',
+    'world_news',
+    'entertainment', 
+    'sports', 
+    'health', 
+    'technology_reviews', 
+    'environment', 
+    'finance'
+];
 
     public static function validateArticleGenerationRequest($postData) {
         if (!self::validateContentType()) {

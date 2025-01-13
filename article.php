@@ -240,7 +240,7 @@ $comments = $articleData['comments'] ?? [];
                     </div>
                     
                   <p class="lead text-muted mb-4">
-    <?php echo htmlspecialchars($articleData['article']['summary']); ?>
+    <?php echo nl2br($articleData['article']['summary']); ?>
 </p>
 <div class="article-content mb-4">
     <?php echo nl2br($articleData['article']['content']); ?>

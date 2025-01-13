@@ -327,15 +327,23 @@ function generateAdvancedArticle($articlesDb, $wordsDb, $type, $options = []) {
                 <p class="text-muted">Automatically selects trending words from RSS feeds</p>
             </div>
 
-            <div id="rss-article-options" class="article-options" style="display:none;">
-                <div class="mb-3">
-                    <label class="form-label">RSS Category</label>
-                    <select name="rss_category" class="form-control">
-                        <option value="technology">Technology</option>
-                        <option value="science">Science</option>
-                        <option value="business">Business</option>
-                    </select>
-                </div>
+
+                <div id="rss-article-options" class="article-options" style="display:none;">
+    <div class="mb-3">
+        <label class="form-label">RSS Category</label>
+        <select name="rss_category" class="form-control">
+            <option value="technology">Technology</option>
+            <option value="science">Science</option>
+            <option value="business">Business</option>
+            <option value="world_news">World News</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="sports">Sports</option>
+            <option value="health">Health</option>
+            <option value="technology_reviews">Technology Reviews</option>
+            <option value="environment">Environment</option>
+            <option value="finance">Finance</option>
+        </select>
+    </div>
             </div>
 
             <button type="submit" class="btn btn-primary">
