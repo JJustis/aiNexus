@@ -151,17 +151,20 @@ class RequestValidator {
         'rss_synthesized_article'
     ];
 
-    private static $validRSSCategories = [
-    'technology', 
-    'science', 
-    'business',
+private static $validRSSCategories = [
+    'science',
+    'technology',
+    'artificial_intelligence',
     'world_news',
-    'entertainment', 
-    'sports', 
-    'health', 
-    'technology_reviews', 
-    'environment', 
-    'finance'
+    'business',
+    'money',
+    'environment',
+    'health',
+    'finance',
+    'cryptocurrency',
+    'startups',
+    'space',
+    'photography'
 ];
 
     public static function validateArticleGenerationRequest($postData) {

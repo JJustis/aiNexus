@@ -329,21 +329,22 @@ function generateAdvancedArticle($articlesDb, $wordsDb, $type, $options = []) {
 
 
                 <div id="rss-article-options" class="article-options" style="display:none;">
-    <div class="mb-3">
-        <label class="form-label">RSS Category</label>
-        <select name="rss_category" class="form-control">
-            <option value="technology">Technology</option>
-            <option value="science">Science</option>
-            <option value="business">Business</option>
-            <option value="world_news">World News</option>
-            <option value="entertainment">Entertainment</option>
-            <option value="sports">Sports</option>
-            <option value="health">Health</option>
-            <option value="technology_reviews">Technology Reviews</option>
-            <option value="environment">Environment</option>
-            <option value="finance">Finance</option>
-        </select>
-    </div>
+<div class="mb-3">
+    <label class="form-label">RSS Category</label>
+    <select name="rss_category" class="form-control">
+        <option value="science">Science</option>
+        <option value="technology">Technology</option>
+        <option value="artificial_intelligence">Artificial Intelligence</option>
+        <option value="world_news">World News</option>
+        <option value="business">Business</option>
+        <option value="money">Money</option>
+        <option value="environment">Environment</option>
+        <option value="health">Health</option>
+        <option value="finance">Finance</option>
+        <option value="cryptocurrency">Cryptocurrency</option>
+        <option value="startups">Startups</option>
+    </select>
+</div>
             </div>
 
             <button type="submit" class="btn btn-primary">
@@ -443,6 +444,33 @@ function generateAdvancedArticle($articlesDb, $wordsDb, $type, $options = []) {
                 </div>
 
                 <div class="col-md-4">
+				 <div class="row">
+        
+            <iframe 
+                src="ai_training_chat.html" 
+                width="100%" 
+                height="750px" 
+                frameborder="0" 
+                style="border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);"
+            ></iframe>
+        
+        <div class="card-footer">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Training Insights</h5>
+                    <p class="text-muted">
+                        <i class="bi bi-book me-2"></i>
+                        Neural network trained on diverse textual data
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-outline-primary" onclick="document.querySelector('iframe').contentWindow.location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Reload Training Interface
+                    </button>
+                </div>
+            </div>
+        </div>
+   
                     <div class="ai-status">
                         <h5><i class="bi bi-cpu"></i> AI System Status</h5>
                         <div class="mb-2">
@@ -598,7 +626,6 @@ function confirmDelete(articleId) {
     }
 }
 
-// Add this script inside the <script> tag at the bottom of the page
 document.getElementById('advanced-article-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
@@ -615,15 +642,15 @@ document.getElementById('advanced-article-form').addEventListener('submit', asyn
             body: formData
         });
 
+        const responseText = await response.text();
+        console.log('Server response:', responseText);  // Log the raw response
+
         let data;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            // Log the actual response for debugging
-            const text = await response.text();
-            console.error('Unexpected response:', text);
-            throw new Error('Server returned invalid response format');
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('JSON parse error:', parseError);
+            throw new Error('Invalid response from server');
         }
 
         if (data.success) {
@@ -658,7 +685,6 @@ document.getElementById('advanced-article-form').addEventListener('submit', asyn
         submitButton.innerHTML = originalText;
     }
 });
-
 // Type selector handler
 const articleTypeSelector = document.getElementById('article-type-selector');
 const optionSections = {
